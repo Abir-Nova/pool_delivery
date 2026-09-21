@@ -1,0 +1,6 @@
+ls -p | tr '\n' ',' | sed 's/,$//'
+
+ls : lists files/directories
+-p : adds / after directories
+tr '\n' ',' : changes line breaks into commas
+sed 's/,$//' : removes the final comma
