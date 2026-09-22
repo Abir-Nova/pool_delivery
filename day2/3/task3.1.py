@@ -8,4 +8,4 @@ else:
 
 
 #methode 2
-print(f"{num} is Even") if (num % 2) == 0 else print(f"{num} is Odd")
+print(f"{num} is Even (methode 2)") if (num % 2) == 0 else print(f"{num} is Odd")
