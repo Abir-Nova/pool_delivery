@@ -17,11 +17,39 @@ print(f"the charachters from the fifth character to the tenth are : {sentence[4:
 print (f"the sentence in lowercase is: {sentence.lower()}")
 
 #task1.6
+# methode 1 : using the replace() method
+print("methode 1 : using the replace() method")
 def replace_characters(sentence, old_char, new_char):
     return sentence.replace(old_char, new_char)
+    # to do it without using the replace() method 
+    # we can use a for loop to iterate through the sentence 
+    # and check if the character is equal to the old_char, 
+    # if it is we add the new_char to a new string, 
+    # if it is not we add the character to the new string. 
+    # then we return the new string.
 
 original_sentence = "tutu on the tuki-kata"
 new_sentence = replace_characters(original_sentence, "tu", "ta")
+print(f"the original sentence is: {original_sentence}")
+print(f"the new sentence is: {new_sentence}")
+
+# methode 2 : using a loop
+print("methode 2 : using a loop")
+
+def replace_characters_loop(sentence, old_char, new_char):
+    new_sentence = ""
+    i = 0
+
+    while i < len(sentence):
+        if sentence[i:i + len(old_char)] == old_char:
+            new_sentence += new_char
+            i += len(old_char)
+        else:
+            new_sentence += sentence[i]
+            i += 1
+    return new_sentence
+new_sentence = replace_characters_loop(original_sentence, "tu", "ta")
+
 print(f"the original sentence is: {original_sentence}")
 print(f"the new sentence is: {new_sentence}")
 
@@ -40,10 +68,10 @@ else:
 #Can you predict the result of the following snippet of code?
 p = "abcdefghij"
 print(p[::-2][:5][::-1][3:])
-# p[::-2] : from the end to the start by a step of 2 : jhfdb
-# p[::-2][:5] : take the first 5 characters from the result of p[::-2] : jhfdb
-# p[::-2][:5][::-1] : from the end to the start with a step of 1 : without skipping charachters : reverse the last result string "jhfdb" : bfdhj
-# p[::-2][:5][::-1][3:] : take the characters from index 3 to the end of the string (step is not mentioned so it's 1 by default) "bfdhj" : hj  
+# jhfdb
+#jhfdb
+#bdfhj
+#hj
 
 # to check we can print each step of the code to see the result of each operation
 step1 = p[::-2]
