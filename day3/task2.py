@@ -49,4 +49,3 @@ input_string = input("Please enter a string: ")
 result = acronym_from_string(input_string)
 print(f"The result of the provided string '{input_string}' is: {result}")
 
-# task2.5
