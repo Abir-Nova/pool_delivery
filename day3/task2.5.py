@@ -1,4 +1,4 @@
-#task2.5
+#task2.5 and task2.6
 
 from collections import Counter
 LANGUAGE_FREQUENCIES = {
@@ -47,22 +47,22 @@ letter_frequencies = {
     }
 
 best_language = None
-best_score = None
+best_difference = None
 
 # compare the letter frequencies in the input string with the predefined frequencies for each language
 for language in LANGUAGE_FREQUENCIES:
     language_freq = LANGUAGE_FREQUENCIES[language]
-    score = 0
+    difference = 0
     for letter in letter_frequencies:
         if letter in language_freq:
-            score += abs(letter_frequencies[letter] - language_freq[letter])
-    print(f"Score for {language}: {score}")
+            difference += abs(letter_frequencies[letter] - language_freq[letter])
+    print(f"Difference for {language}: {difference}")
 
-    if best_score is None or score < best_score:
-        best_score = score
+    if best_difference is None or difference < best_difference:
+        best_difference = difference
         best_language = language
 
-# The language with the lowest score is the most likely language of the input string.   
+# The language with the lowest difference is the most likely language of the input string.   
 print(f"The most likely language of the input string is: {best_language}")
 
 
