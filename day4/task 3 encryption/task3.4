@@ -1,0 +1,821 @@
+
+
+## 1. The overall idea
+
+Normally, Vigenère encryption is:
+
+text
+plaintext + key → ciphertext
+
+
+For example:
+
+text
+plaintext : attacking
+key       : oculorhin
+ciphertext: ovnlqbpvt
+
+
+But here we have the opposite problem:
+
+text
+ciphertext + key length → ??? → plaintext
+
+
+We don't know the key.
+
+The program tries to **guess the key using English letter frequencies**.
+
+The basic assumption is:
+
+> In a sufficiently long English text, `e` tends to be one of the most frequent letters.
+
+So we use the frequency of letters to estimate each letter of the key.
+
+---
+
+# Part 1 — Finding the key
+
+python
+def find_key(ciphertext, key_length):
+
+
+We give the function two things:
+
+text
+ciphertext = encrypted message
+key_length = length of the unknown key
+
+
+For example:
+
+text
+ciphertext = "..."
+key_length = 5
+
+
+We want to discover:
+
+text
+key = ????? 
+
+
+---
+
+## 2. Start with an empty key
+
+python
+key = ""
+
+
+We don't know any key letters yet.
+
+Eventually we'll build:
+
+text
+?
+??
+???
+????
+?????
+
+
+until we have the complete key.
+
+---
+
+# 3. Look at each key position
+
+python
+for key_position in range(key_length):
+
+
+Suppose:
+
+text
+key_length = 3
+
+
+This loop gives:
+
+text
+key_position = 0
+key_position = 1
+key_position = 2
+
+
+Why?
+
+Because a Vigenère key of length 3 looks like:
+
+text
+key = A B C
+      ↑ ↑ ↑
+      0 1 2
+
+
+We're going to try to discover **A**, then **B**, then **C**.
+
+---
+
+# 4. Separate the ciphertext into groups
+
+This is the most important concept.
+
+Suppose:
+
+text
+ciphertext = abcdefghijkl
+key length = 3
+
+
+Because the key has 3 letters:
+
+text
+key = ABC
+
+
+the encryption pattern is:
+
+text
+plaintext : p p p p p p p p p p p p
+key       : A B C A B C A B C A B C
+ciphertext: x x x x x x x x x x x x
+            ↑   ↑   ↑
+
+
+So:
+
+text
+ciphertext positions:
+
+0 1 2 3 4 5 6 7 8 9 10 11
+A B C A B C A B C A  B  C
+
+
+All letters at positions:
+
+text
+0, 3, 6, 9...
+
+
+were encrypted using key letter `A`.
+
+All letters at:
+
+text
+1, 4, 7, 10...
+
+
+were encrypted using key letter `B`.
+
+All letters at:
+
+text
+2, 5, 8, 11...
+
+
+were encrypted using key letter `C`.
+
+That's why the program does:
+
+python
+for i in range(key_position, len(ciphertext), key_length):
+
+
+The `range()` means:
+
+> Start at this key position and jump by the key length each time.
+
+For example:
+
+python
+range(0, 12, 3)
+
+
+produces:
+
+text
+0 3 6 9
+
+
+And:
+
+python
+range(1, 12, 3)
+
+
+produces:
+
+text
+1 4 7 10
+
+
+---
+
+# 5. Why do we create `group`?
+
+python
+group = ""
+
+
+We collect all ciphertext letters that were encrypted with the **same key letter**.
+
+For example:
+
+text
+ciphertext:
+L X F O P V E F R N H R
+
+
+with key length `3`.
+
+We get:
+
+text
+group 0 → L O E N
+group 1 → X P F H
+group 2 → F V R R
+
+
+Each group was encrypted with **one fixed Caesar shift**.
+
+That's the key idea.
+
+---
+
+# 6. Why does a Vigenère cipher become Caesar ciphers?
+
+Suppose the key is:
+
+text
+key = CAT
+
+
+Then:
+
+text
+key positions:
+
+C → shift 2
+A → shift 0
+T → shift 19
+
+
+So:
+
+text
+plaintext:  a t t a c k i n g
+key:        C A T C A T C A T
+
+
+The letters at positions `0, 3, 6` are all shifted by `C`.
+
+The letters at positions `1, 4, 7` are all shifted by `A`.
+
+The letters at positions `2, 5, 8` are all shifted by `T`.
+
+Therefore:
+
+text
+Vigenère
+   ↓
+split into groups
+   ↓
+Group 0 = Caesar cipher
+Group 1 = Caesar cipher
+Group 2 = Caesar cipher
+
+
+That's why knowing the **key length** is so useful.
+
+---
+
+# 7. Count the letters
+
+Once we have a group:
+
+python
+counts = Counter(group)
+
+
+For example:
+
+text
+group = "eeettttaaaooo"
+
+
+`Counter` tells us:
+
+text
+e → 3
+t → 4
+a → 3
+o → 3
+
+
+So:
+
+python
+counts.most_common(1)
+
+
+gives the most frequent letter.
+
+Then:
+
+python
+most_common_letter = counts.most_common(1)[0][0]
+
+
+extracts the letter itself.
+
+For example:
+
+text
+Counter({'t': 4, 'e': 3, 'a': 3})
+
+
+becomes:
+
+text
+t
+
+
+---
+
+# 8. The big assumption: most common ciphertext letter = encrypted `e`
+
+Now we make an assumption:
+
+> English `e` is very frequent, so the most frequent letter in our group probably represents `e`.
+
+Suppose:
+
+text
+most_common_letter = x
+
+
+We assume:
+
+text
+plaintext letter = e
+ciphertext letter = x
+
+
+Remember that Vigenère encryption does:
+
+text
+ciphertext = plaintext + key
+
+
+So:
+
+text
+x = e + key
+
+
+We need to figure out the key shift.
+
+---
+
+# 9. Convert letters to numbers
+
+The alphabet is:
+
+text
+abcdefghijklmnopqrstuvwxyz
+
+
+with indexes:
+
+text
+a = 0
+b = 1
+c = 2
+d = 3
+e = 4
+...
+x = 23
+
+
+The code:
+
+python
+cipher_position = alphabet.index(most_common_letter)
+
+
+If the letter is `x`:
+
+text
+cipher_position = 23
+
+
+And:
+
+python
+e_position = alphabet.index("e")
+
+
+gives:
+
+text
+e_position = 4
+
+
+---
+
+# 10. Calculate the key shift
+
+We have:
+
+text
+ciphertext = plaintext + key
+
+
+Therefore:
+
+text
+key = ciphertext - plaintext
+
+
+So:
+
+python
+shift = (cipher_position - e_position) % 26
+
+
+Example:
+
+text
+cipher = x → 23
+e      → 4
+
+23 - 4 = 19
+
+
+So the key shift is:
+
+text
+19
+
+
+And alphabet position 19 is:
+
+text
+t
+
+
+Therefore we guess:
+
+text
+key letter = t
+
+
+---
+
+# 11. Add that letter to the key
+
+python
+key += alphabet[shift]
+
+
+If:
+
+text
+shift = 19
+
+
+then:
+
+text
+alphabet[19] = t
+
+
+and:
+
+text
+key = key + "t"
+
+
+We repeat the whole process for the next key position.
+
+Eventually:
+
+text
+key = "?????"
+
+
+becomes something like:
+
+text
+key = "hello"
+
+
+---
+
+# Part 2 — Decrypting
+
+Once we have a guessed key, the rest is normal Vigenère decryption.
+
+python
+def decrypt(message, key):
+
+
+We have:
+
+text
+ciphertext + key → plaintext
+
+
+---
+
+## 12. Start with an empty result
+
+python
+result = ""
+
+
+We'll build the plaintext letter by letter.
+
+---
+
+## 13. Keep track of the key position
+
+python
+key_position = 0
+
+
+Suppose:
+
+text
+key = cat
+
+
+We need:
+
+text
+c → position 0
+a → position 1
+t → position 2
+c → position 0
+a → position 1
+t → position 2
+...
+
+
+So we need `key_position`.
+
+---
+
+# 14. Go through every ciphertext letter
+
+python
+for letter in message:
+
+
+For each letter:
+
+text
+ciphertext:
+o v n l q b ...
+↑
+
+
+we decrypt it.
+
+---
+
+# 15. Ignore spaces and punctuation
+
+python
+if letter in alphabet:
+
+
+If it's a letter, decrypt it.
+
+Otherwise:
+
+python
+else:
+    result += letter
+
+
+So:
+
+text
+hello world!
+
+
+keeps:
+
+text
+hello world!
+
+
+The spaces and `!` aren't encrypted.
+
+---
+
+# 16. Convert the ciphertext letter to a number
+
+python
+message_position = alphabet.index(letter)
+
+
+For example:
+
+text
+n → 13
+
+
+---
+
+# 17. Get the current key letter
+
+python
+key_position_value = alphabet.index(key[key_position])
+
+
+Suppose:
+
+text
+key = cat
+
+
+and:
+
+text
+key_position = 2
+
+
+Then:
+
+text
+key[2] = t
+
+
+and:
+
+text
+alphabet.index("t") = 19
+
+
+---
+
+# 18. Subtract the key shift
+
+Encryption was:
+
+text
+ciphertext = plaintext + key
+
+
+Therefore decryption is:
+
+text
+plaintext = ciphertext - key
+
+
+That's why:
+
+python
+new_position = (
+    message_position - key_position_value
+) % 26
+
+
+For example:
+
+text
+ciphertext = n → 13
+key        = t → 19
+
+13 - 19 = -6
+
+
+We use:
+
+python
+-6 % 26
+
+
+which gives:
+
+text
+20
+
+
+And:
+
+text
+alphabet[20] = u
+
+
+So:
+
+text
+n - t → u
+
+
+The `% 26` makes the alphabet **circular**.
+
+---
+
+# 19. Move to the next key letter
+
+python
+key_position += 1
+
+
+If:
+
+text
+key = cat
+
+
+we go:
+
+text
+0 → 1 → 2
+
+
+---
+
+# 20. Restart the key
+
+python
+if key_position == len(key):
+    key_position = 0
+
+
+When we've reached the end:
+
+text
+key = c a t
+      0 1 2
+
+
+we go back to:
+
+text
+0
+
+
+So the key repeats:
+
+text
+c a t c a t c a t...
+
+
+---
+
+# The entire theoretical process
+
+The program is basically doing this:
+
+text
+              CIPHERTEXT
+                   │
+                   ▼
+          ┌─────────────────┐
+          │ Know key length │
+          └────────┬────────┘
+                   │
+                   ▼
+       Separate ciphertext into
+       groups based on position
+                   │
+                   ▼
+       ┌───────────┼───────────┐
+       ▼           ▼           ▼
+     Group 1     Group 2     Group 3 ...
+       │           │           │
+       ▼           ▼           ▼
+    Counter     Counter     Counter
+       │           │           │
+       ▼           ▼           ▼
+ Most common  Most common  Most common
+    letter       letter       letter
+       │           │           │
+       ▼           ▼           ▼
+ Assume it is   Assume it is  Assume it is
+      E              E             E
+       │           │           │
+       ▼           ▼           ▼
+Calculate key  Calculate key Calculate key
+   shift          shift         shift
+       │           │           │
+       └───────────┼─────────────┘
+                   ▼
+             GUESSED KEY
+                   │
+                   ▼
+             Vigenère
+             decryption
+                   │
+                   ▼
+              PLAINTEXT
+
+
+
